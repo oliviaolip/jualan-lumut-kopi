@@ -55,6 +55,13 @@ CARA PAKAI SEHARI-HARI
 - Tiap minggu mulai dengan modal Rp 500.000 (otomatis).
 - Isi transaksi: Tanggal, Keterangan, pilih Keluar/Masuk, Nominal, Simpan.
 - 4 kartu di atas: Saldo Operasional, Pengeluaran, Pendapatan, Estimasi Bibit.
+- Jualan minuman: ada tab **Lumut** dan **Kopi**. Tap menu > atur jumlah > Catat
+  Penjualan. Otomatis masuk sebagai Pendapatan dengan keterangan
+  "Penjualan Kopi Gula Aren x2".
+- Harga menu diisi sekali: tombol **Kelola menu** (kanan atas kartu Jualan).
+  Menu awal: Lumut Original, Lumut Susu, Kopi Gula Aren, Kopi Susu, Kopi Hitam
+  (harga 0 = tampil "atur harga"). Tombol "ubah" untuk mengganti harga,
+  × untuk menghapus, isi nama+harga lalu Simpan menu untuk menambah.
 - Akhir minggu: klik "Hitung Tutup Buku / Alokasi Bibit".
   Sisa bersih (Pendapatan - Pengeluaran) dicatat sebagai baris "Bibit".
   Kalau dihitung ulang, baris Bibit minggu itu diganti, tidak dobel.
@@ -66,5 +73,9 @@ ISI GOOGLE SHEET (dibuat otomatis, jangan diubah manual)
 --------------------------------------------------
 Sheet "Transaksi": ID | Tanggal | Keterangan | Jenis | Nominal | Minggu | Dibuat
 Sheet "Minggu"   : Kunci | Minggu | Mulai | Modal | Status | Bibit | Diperbarui
+Sheet "Menu"     : Kategori | Nama | Harga | Aktif
+
+Daftar menu jualan ada di sheet "Menu" (kolom Kategori: Lumut / Kopi).
+Boleh diubah dari aplikasi (Kelola menu) atau langsung di Sheet.
 
 Jangan hapus baris header. Boleh melihat isinya kapan saja dari Sheet.

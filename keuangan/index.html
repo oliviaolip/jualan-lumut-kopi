@@ -89,6 +89,17 @@
     <p id="formMsg" class="text-xs mt-2 text-slate-500"></p>
   </section>
 
+  <!-- jualan minuman -->
+  <section class="bg-white mx-4 mt-4 rounded-2xl p-4 shadow-sm">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-semibold text-slate-700">Jualan Minuman</h2>
+      <button id="btnMenu" class="text-xs text-brand-700 underline">Kelola menu</button>
+    </div>
+    <div id="tabMenu" class="flex gap-1 rounded-xl bg-slate-100 p-1 mb-3"></div>
+    <div id="menuGrid" class="grid grid-cols-2 gap-2"></div>
+    <p class="text-[11px] text-slate-400 mt-2">Tap menu → isi jumlah → tercatat otomatis sebagai Pendapatan.</p>
+  </section>
+
   <!-- tabel riwayat minggu berjalan -->
   <section class="bg-white mx-4 mt-4 rounded-2xl p-4 shadow-sm">
     <div class="flex items-center justify-between mb-3">
@@ -174,8 +185,47 @@
   </div>
 </div>
 
+<!-- ===== modal jual ===== -->
+<div id="mJual" class="hidden fixed inset-0 bg-black/40 z-40">
+  <div class="sheet bg-white w-full max-w-md mx-auto rounded-t-3xl p-5 mt-auto fixed bottom-0">
+    <h2 class="font-semibold text-lg" id="jNama">—</h2>
+    <div class="text-sm text-slate-500 mb-3 num" id="jHarga">—</div>
+    <div class="flex items-center justify-between bg-slate-100 rounded-xl px-3 py-2">
+      <button id="jMin" class="w-11 h-11 rounded-lg bg-white text-xl leading-none">−</button>
+      <div class="text-2xl font-semibold num" id="jQty">1</div>
+      <button id="jPlus" class="w-11 h-11 rounded-lg bg-white text-xl leading-none">+</button>
+    </div>
+    <div class="flex justify-between mt-3 text-sm"><span>Total</span><b id="jTotal" class="num">Rp 0</b></div>
+    <div class="grid grid-cols-2 gap-2 mt-4">
+      <button id="jOk" class="rounded-xl bg-brand-700 text-white py-3 font-medium">Catat Penjualan</button>
+      <button id="jNo" class="rounded-xl bg-slate-100 py-3 font-medium">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== modal kelola menu ===== -->
+<div id="mMnu" class="hidden fixed inset-0 bg-black/40 z-40">
+  <div class="sheet bg-white w-full max-w-md mx-auto rounded-t-3xl p-5 mt-auto fixed bottom-0">
+    <h2 class="font-semibold text-lg mb-3">Kelola Menu</h2>
+    <div id="mnuList" class="space-y-2"></div>
+    <div class="mt-4 border-t border-slate-200 pt-3">
+      <p class="text-xs text-slate-500 mb-2">Tambah menu / ubah harga</p>
+      <div class="grid grid-cols-2 gap-2">
+        <select id="mKat" class="rounded-xl border border-slate-300 px-2 py-2.5"><option>Lumut</option><option>Kopi</option></select>
+        <input id="mHarga" type="number" inputmode="numeric" min="0" placeholder="Harga" class="rounded-xl border border-slate-300 px-3 py-2.5 num">
+      </div>
+      <input id="mNama" placeholder="Nama menu (mis. Kopi Susu)" class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2.5">
+      <div class="grid grid-cols-2 gap-2 mt-2">
+        <button id="mAdd" class="rounded-xl bg-brand-700 text-white py-3 font-medium">Simpan menu</button>
+        <button id="mClose" class="rounded-xl bg-slate-100 py-3 font-medium">Tutup</button>
+      </div>
+      <p id="mMsg" class="text-xs text-slate-500 mt-2"></p>
+    </div>
+  </div>
+</div>
+
 <script>
-const APP_V = '1';
+const APP_V = '2';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -283,6 +333,7 @@ function render() {
     $(id).classList.toggle('opacity-40', lama);
   });
   $('nomHint').textContent = $('fNom').value ? rp($('fNom').value) : '';
+  renderJual();
 }
 
 /* ---------- form ---------- */
@@ -402,6 +453,103 @@ $('cfgCopy').addEventListener('click', async () => {
   const link = location.origin + location.pathname + location.search;
   try { await navigator.clipboard.writeText(link); $('cfgMsg').textContent = 'Link disalin — setelan URL ikut di dalamnya.'; }
   catch (e) { $('cfgMsg').textContent = link; }
+});
+
+
+/* ---------- jualan minuman ---------- */
+let KAT = 'Lumut', JUAL = null, JQTY = 1;
+
+function kategoriMenu() { return [...new Set(((D && D.menu) || []).map(m => m.kategori))]; }
+function renderJual() {
+  if (!D) return;
+  const kats = kategoriMenu();
+  if (!kats.length) { $('tabMenu').innerHTML = ''; $('menuGrid').innerHTML = '<p class="text-xs text-slate-400 col-span-2">Belum ada menu.</p>'; return; }
+  if (!kats.includes(KAT)) KAT = kats[0];
+  $('tabMenu').innerHTML = kats.map(k =>
+    '<button data-kat="' + esc(k) + '" class="flex-1 rounded-lg py-2 text-sm font-medium ' +
+    (k === KAT ? 'bg-white shadow-sm text-brand-700' : 'text-slate-500') + '">' + esc(k) + '</button>').join('');
+  const items = (D.menu || []).filter(m => m.kategori === KAT);
+  $('menuGrid').innerHTML = items.map(m =>
+    '<button data-jual="' + esc(m.nama) + '" class="text-left rounded-xl border border-slate-200 active:bg-slate-50 px-3 py-2.5">' +
+    '<div class="font-medium text-sm leading-tight">' + esc(m.nama) + '</div>' +
+    '<div class="text-xs num mt-0.5 ' + (m.harga ? 'text-slate-500' : 'text-amber-600') + '">' +
+    (m.harga ? rp(m.harga) : 'atur harga') + '</div></button>').join('') ||
+    '<p class="text-xs text-slate-400 col-span-2">Menu ' + esc(KAT) + ' kosong.</p>';
+}
+$('tabMenu').addEventListener('click', e => {
+  const b = e.target.closest('[data-kat]');
+  if (!b) return;
+  KAT = b.getAttribute('data-kat');
+  renderJual();
+});
+$('menuGrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-jual]');
+  if (!b) return;
+  const m = (D.menu || []).find(x => x.nama === b.getAttribute('data-jual'));
+  if (!m) return;
+  if (!m.harga) { bukaMenu(); $('mMsg').textContent = 'Isi harga "' + m.nama + '" dulu, lalu tap menu lagi.'; return; }
+  JUAL = m; JQTY = 1;
+  $('jNama').textContent = m.nama;
+  $('jHarga').textContent = rp(m.harga) + ' / pcs';
+  jualRender();
+  $('mJual').classList.remove('hidden');
+});
+function jualRender() {
+  if (!JUAL) return;
+  $('jQty').textContent = JQTY;
+  $('jTotal').textContent = rp(JUAL.harga * JQTY);
+}
+$('jMin').addEventListener('click', () => { JQTY = Math.max(1, JQTY - 1); jualRender(); });
+$('jPlus').addEventListener('click', () => { JQTY = Math.min(99, JQTY + 1); jualRender(); });
+$('jNo').addEventListener('click', () => $('mJual').classList.add('hidden'));
+$('jOk').addEventListener('click', async () => {
+  if (!JUAL || BUSY) return;
+  const j = JUAL, n = JQTY;
+  $('mJual').classList.add('hidden');
+  const ok = await kirim({ action: 'jual', tanggal: $('fTgl').value || todayYMD(),
+    items: [{ kategori: j.kategori, nama: j.nama, harga: j.harga, qty: n }] });
+  if (ok) { $('formMsg').textContent = 'Penjualan tercatat: ' + j.nama + ' x' + n + ' · ' + rp(j.harga * n); banner('', ''); }
+});
+
+/* ---------- kelola menu ---------- */
+function bukaMenu() { renderMnu(); $('mMnu').classList.remove('hidden'); }
+function renderMnu() {
+  if (!D) return;
+  const ms = D.menu || [];
+  $('mnuList').innerHTML = ms.map(m =>
+    '<div class="flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-2">' +
+    '<div class="flex-1 min-w-0"><div class="text-sm font-medium truncate">' + esc(m.nama) + '</div>' +
+    '<div class="text-[11px] text-slate-500">' + esc(m.kategori) + ' · ' + (m.harga ? rp(m.harga) : 'harga belum diisi') + '</div></div>' +
+    '<button data-edit="' + esc(m.nama) + '" class="text-xs text-brand-700 underline px-1">ubah</button>' +
+    '<button data-mdel="' + esc(m.nama) + '" class="text-slate-300 px-1 text-lg leading-none">&times;</button></div>').join('')
+    || '<p class="text-xs text-slate-400">Belum ada menu.</p>';
+}
+$('btnMenu').addEventListener('click', bukaMenu);
+$('mClose').addEventListener('click', () => $('mMnu').classList.add('hidden'));
+$('mnuList').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-edit]'), dl = e.target.closest('[data-mdel]');
+  if (ed) {
+    const m = (D.menu || []).find(x => x.nama === ed.getAttribute('data-edit'));
+    if (!m) return;
+    const h = prompt('Harga ' + m.nama + ' (angka saja):', m.harga || '');
+    if (h == null) return;
+    const j = await kirim({ action: 'menuUbah', lama: m.nama, kategori: m.kategori, nama: m.nama, harga: Math.abs(Number(h) || 0) });
+    if (j) renderMnu();
+    return;
+  }
+  if (dl) {
+    const nama = dl.getAttribute('data-mdel');
+    if (!confirm('Hapus menu ' + nama + '?')) return;
+    const j = await kirim({ action: 'menuHapus', nama: nama });
+    if (j) renderMnu();
+  }
+});
+$('mAdd').addEventListener('click', async () => {
+  const nama = $('mNama').value.trim(), harga = Math.abs(Number($('mHarga').value) || 0);
+  if (!nama) { $('mMsg').textContent = 'Nama menu belum diisi.'; return; }
+  const j = await kirim({ action: 'menuTambah', kategori: $('mKat').value, nama: nama, harga: harga });
+  if (j) { $('mMsg').textContent = 'Tersimpan: ' + nama + (harga ? ' · ' + rp(harga) : ' · harga belum diisi'); $('mNama').value = ''; $('mHarga').value = ''; renderMnu(); }
+  else $('mMsg').textContent = 'Gagal menyimpan menu.';
 });
 
 /* ---------- start ---------- */
