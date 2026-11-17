@@ -119,11 +119,10 @@
       <button id="btnRefresh" class="text-xs text-brand-700 underline">muat ulang</button>
     </div>
     <div class="overflow-x-auto -mx-1">
-      <table class="w-full text-sm min-w-[520px]">
+      <table class="w-full text-sm min-w-[460px]">
         <thead>
           <tr class="text-[11px] uppercase text-slate-500 border-b border-slate-200">
             <th class="text-left px-1 py-2 font-medium">Tanggal</th>
-            <th class="text-left px-1 py-2 font-medium">Menu</th>
             <th class="text-left px-1 py-2 font-medium">Keterangan</th>
             <th class="text-right px-1 py-2 font-medium">Keluar</th>
             <th class="text-right px-1 py-2 font-medium">Masuk</th>
@@ -248,7 +247,7 @@
 </div>
 
 <script>
-const APP_V = '4';
+const APP_V = '5';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -346,7 +345,6 @@ function render() {
     if (!bib) jalan += (it.jenis === 'Pendapatan' ? it.nominal : -it.nominal);
     return '<tr class="border-b border-slate-100 ' + (bib ? 'bg-amber-50/60' : '') + '">' +
       '<td class="px-1 py-2 whitespace-nowrap text-slate-500 num">' + tglID(it.tanggal) + '</td>' +
-      '<td class="px-1 py-2 whitespace-nowrap text-[11px] text-slate-500">' + esc(it.kategori || (backendLama ? '—' : KAT)) + '</td>' +
       '<td class="px-1 py-2 ' + (bib ? 'font-medium text-amber-800' : '') + '">' + esc(it.keterangan) + '</td>' +
       '<td class="px-1 py-2 text-right num text-rose-700 whitespace-nowrap">' + (it.jenis === 'Pengeluaran' ? rp(it.nominal) : '') + '</td>' +
       '<td class="px-1 py-2 text-right num text-emerald-700 whitespace-nowrap">' + (it.jenis === 'Pendapatan' ? rp(it.nominal) : '') + '</td>' +
