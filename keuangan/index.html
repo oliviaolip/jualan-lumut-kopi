@@ -115,7 +115,7 @@
   <!-- tabel riwayat minggu berjalan -->
   <section class="bg-white mx-4 mt-4 rounded-2xl p-4 shadow-sm">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-slate-700">Riwayat Minggu Ini</h2>
+      <h2 class="font-semibold text-slate-700">Riwayat <span class="lbKat">Lumut</span></h2>
       <button id="btnRefresh" class="text-xs text-brand-700 underline">muat ulang</button>
     </div>
     <div class="overflow-x-auto -mx-1">
@@ -248,7 +248,7 @@
 </div>
 
 <script>
-const APP_V = '3';
+const APP_V = '4';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -326,23 +326,27 @@ function render() {
   const m = D.minggu, r = D.ringkasan;
   $('weekLabel').textContent = m.label + (LIHAT ? ' · melihat riwayat' : (m.sudahTutup ? ' · sudah tutup buku' : ''));
   const rk = (r.kat && r.kat[KAT]) || r;
+  const backendLama = !r.kat;                     // Code.gs lama: kategori belum ada, angka Lumut/Kopi jadi kembar
+  if (backendLama) banner('Code.gs di Apps Script masih versi lama, jadi angka Lumut dan Kopi tampil sama. Tempel Code.gs baru, lalu Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
   document.querySelectorAll('.lbKat').forEach(e => { e.textContent = KAT; });
   $('modalTxt').textContent = rp(rk.modal);
-  $('totalTxt').textContent = 'Total dua menu: sisa ' + rp(r.saldo);
+  $('totalTxt').textContent = backendLama ? 'Total dua menu: —' : 'Total dua menu: sisa ' + rp(r.saldo);
   $('cSaldo').textContent = rp(rk.saldo);
   $('cPeng').textContent = rp(rk.pengeluaran);
   $('cPen').textContent = rp(rk.pendapatan);
   $('cBibit').textContent = rp(rk.bibit);
   $('cSaldo').className = 'text-[15px] leading-tight font-semibold num mt-0.5 break-words' + (rk.saldo < 0 ? ' text-rose-200' : '');
 
-  const list = (D.trx || []).slice().sort((a, b) => a.tanggal < b.tanggal ? -1 : a.tanggal > b.tanggal ? 1 : 0);
-  let jalan = r.modal;
+  const list = (D.trx || [])
+    .filter(it => backendLama || (it.kategori || 'Lumut') === KAT)   // riwayat ikut kategori yang dipilih
+    .sort((a, b) => a.tanggal < b.tanggal ? -1 : a.tanggal > b.tanggal ? 1 : 0);
+  let jalan = rk.modal;
   const rows = list.map(it => {
     const bib = it.jenis === 'Bibit';
     if (!bib) jalan += (it.jenis === 'Pendapatan' ? it.nominal : -it.nominal);
     return '<tr class="border-b border-slate-100 ' + (bib ? 'bg-amber-50/60' : '') + '">' +
       '<td class="px-1 py-2 whitespace-nowrap text-slate-500 num">' + tglID(it.tanggal) + '</td>' +
-      '<td class="px-1 py-2 whitespace-nowrap text-[11px] text-slate-500">' + esc(it.kategori || '—') + '</td>' +
+      '<td class="px-1 py-2 whitespace-nowrap text-[11px] text-slate-500">' + esc(it.kategori || (backendLama ? '—' : KAT)) + '</td>' +
       '<td class="px-1 py-2 ' + (bib ? 'font-medium text-amber-800' : '') + '">' + esc(it.keterangan) + '</td>' +
       '<td class="px-1 py-2 text-right num text-rose-700 whitespace-nowrap">' + (it.jenis === 'Pengeluaran' ? rp(it.nominal) : '') + '</td>' +
       '<td class="px-1 py-2 text-right num text-emerald-700 whitespace-nowrap">' + (it.jenis === 'Pendapatan' ? rp(it.nominal) : '') + '</td>' +
@@ -351,6 +355,7 @@ function render() {
       '<td class="px-1 py-2 text-right">' + (bib ? '' : '<button data-del="' + esc(it.id) + '" class="text-slate-300 hover:text-rose-600">&times;</button>') + '</td></tr>';
   }).join('');
   $('rowsT').innerHTML = rows;
+  $('emptyT').textContent = 'Belum ada transaksi ' + KAT + ' minggu ini.';
   $('emptyT').style.display = list.length ? 'none' : '';
 
   // tombol nonaktif hanya saat melihat riwayat minggu lama (BUSY bukan alasan: render terjadi di tengah proses)
