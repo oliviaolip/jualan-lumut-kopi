@@ -273,7 +273,7 @@
 </div>
 
 <script>
-const APP_V = '6';
+const APP_V = '7';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -435,7 +435,7 @@ $('fTrx').addEventListener('submit', async e => {
     $('formMsg').textContent = 'Tersimpan di Sheet: ' + tglID(ts.tanggal || $('fTgl').value) + ' · ' +
       (ts.kategori || KAT) + ' · ' + (JENIS === 'Pendapatan' ? '+' : '−') + rp(nom);
     $('fKet').value = ''; $('fNom').value = ''; $('nomHint').textContent = '';
-    $('fTgl').value = todayYMD();
+    $('fTgl').value = ts.tanggal || $('fTgl').value;   // tanggal tetap seperti yang dipilih, tidak balik ke hari ini
   } else {
     $('formMsg').textContent = 'Gagal menyimpan. Coba lagi.';
   }
