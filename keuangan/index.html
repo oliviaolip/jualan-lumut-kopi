@@ -281,7 +281,7 @@
 </div>
 
 <script>
-const APP_V = '11';
+const APP_V = '12';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -471,9 +471,16 @@ $('fTrx').addEventListener('submit', async e => {
   $('formMsg').textContent = 'Menyimpan…';
   const ok = await kirim({ action: 'tambah', tanggal: tgl, keterangan: ket, jenis: JENIS, nominal: nom, kategori: KAT });
   if (ok) {
-    const ts = ok.tersimpan || {};
-    $('formMsg').textContent = 'Tersimpan di Sheet: ' + tglID(ts.tanggal || $('fTgl').value) + ' · ' +
-      (ts.kategori || KAT) + ' · ' + (JENIS === 'Pendapatan' ? '+' : '−') + rp(nom);
+      const ts = ok.tersimpan || {};
+      // bukti dari data Sheet: baris yang baru masuk harus bertanggal sama dengan yang dipilih
+      const baris = (ok.trx || []).filter(t => t.keterangan === ket && t.nominal === nom && t.jenis === JENIS).pop();
+      if (baris && baris.tanggal !== tgl) {
+        banner('GAGAL: Sheet menyimpan tanggal ' + tglID(baris.tanggal) + ', bukan ' + tglID(tgl) +
+          '. Code.gs di Apps Script masih versi lama. Tempel Code.gs terbaru, lalu Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
+        return;
+      }
+      $('formMsg').textContent = 'Tersimpan di Sheet: ' + tglID((baris && baris.tanggal) || ts.tanggal || $('fTgl').value) + ' · ' +
+        (ts.kategori || KAT) + ' · ' + (JENIS === 'Pendapatan' ? '+' : '−') + rp(nom);
     $('fKet').value = ''; $('fNom').value = ''; $('nomHint').textContent = '';
     $('fTgl').value = ts.tanggal || tgl;   // tanggal tetap seperti yang dipilih, tidak balik ke hari ini
     paintTglForm();
@@ -528,10 +535,15 @@ $('eSave').addEventListener('click', async () => {
     $('eMsg').textContent = 'Gagal menyimpan. Cek pesan merah di atas. Kalau tertulis "action tidak dikenal", Code.gs belum di-Deploy New version.';
     return;
   }
-  const ts = j.tersimpan || {};
-  $('mEdit').classList.add('hidden');
-  banner('Tersimpan di Sheet: ' + tglID(ts.tanggal || tgl) + ' · ' + (ts.kategori || $('eKat').value) +
-    ' · ' + (ts.jenis === 'Pendapatan' ? '+' : '−') + rp(ts.nominal || nom), 'warn');
+  const row = (j.trx || []).find(t => t.id === EDIT);          // bukti dari Sheet, bukan dari input
+    $('mEdit').classList.add('hidden');
+    if (!row || row.tanggal !== tgl) {
+      banner('GAGAL: Sheet masih menyimpan ' + tglID(row ? row.tanggal : '') + ', bukan ' + tglID(tgl) +
+        '. Code.gs di Apps Script masih versi lama (versi lama mengabaikan tanggal saat ubah). Tempel Code.gs terbaru, lalu Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
+      return;
+    }
+    banner('Tersimpan di Sheet: ' + tglID(row.tanggal) + ' · ' + (row.kategori || $('eKat').value) +
+      ' · ' + (row.jenis === 'Pendapatan' ? '+' : '−') + rp(row.nominal || nom), 'warn');
 });
 
 $('btnRefresh').addEventListener('click', () => load(LIHAT));

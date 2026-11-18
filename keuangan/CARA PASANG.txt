@@ -79,3 +79,21 @@ Daftar menu jualan ada di sheet "Menu" (kolom Kategori: Lumut / Kopi).
 Boleh diubah dari aplikasi (Kelola menu) atau langsung di Sheet.
 
 Jangan hapus baris header. Boleh melihat isinya kapan saja dari Sheet.
+
+--------------------------------------------------
+UBAH TRANSAKSI DI RIWAYAT (app v12)
+--------------------------------------------------
+Tap satu baris di tabel Riwayat > muncul "Ubah Transaksi": tanggal, menu,
+Keluar/Masuk, nominal, keterangan. Tekan Simpan. Tanda × untuk hapus cepat.
+Baris "Bibit" tidak bisa diubah (dibuat ulang oleh tutup buku).
+
+Kalau tanggal tidak mau berubah (tetap tanggal lama):
+1. Itu tanda Code.gs di Apps Script masih versi lama — versi lama mengabaikan
+   tanggal saat mengubah transaksi.
+2. Buka Google Sheet > Extensions > Apps Script > ganti SEMUA isi Code.gs
+   dengan file Code.gs terbaru > Ctrl + S.
+3. Deploy > Manage deployments > ikon pensil > Version: New version > Deploy.
+   URL /exec tetap sama, tidak perlu tempel ulang di ⚙.
+4. Di aplikasi: muat ulang sampai tulisan versi di paling bawah = v12.
+5. Coba ubah lagi. Kalau masih gagal, banner merah menyebut tanggal yang
+   benar-benar tersimpan di Sheet — kirim bunyi banner itu ke saya.
