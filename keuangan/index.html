@@ -281,7 +281,7 @@
 </div>
 
 <script>
-const APP_V = '13';
+const APP_V = '14';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -378,9 +378,9 @@ function render() {
   $('weekLabel').textContent = m.label + (LIHAT ? ' · melihat riwayat' : (m.sudahTutup ? ' · sudah tutup buku' : ''));
   const rk = (r.kat && r.kat[KAT]) || r;
   const backendLama = !r.kat;                     // Code.gs lama: kategori belum ada, angka Lumut/Kopi jadi kembar
-    $('verSheet').textContent = (D.versi ? String(D.versi) : '1');
+    $('verSheet').textContent = (D.versi ? String(D.versi) : '1') + (D.ss && D.ss.id ? ' · ' + String(D.ss.id).slice(0, 8) : '');
       if (backendLama) banner('Code.gs di Apps Script masih versi lama, jadi angka Lumut dan Kopi tampil sama. Tempel Code.gs baru, lalu Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
-      else if (!(Number(D.versi) >= 12)) banner('Code.gs di Apps Script masih versi lama (Sheet v' + (D.versi || 1) + ', harusnya v12), jadi ubah tanggal tidak tersimpan. Tempel Code.gs terbaru → Ctrl+S → Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
+      else if (!(Number(D.versi) >= 13)) banner('Code.gs di Apps Script masih versi lama (Sheet v' + (D.versi || 1) + ', harusnya v13), jadi ubah tanggal tidak tersimpan. Tempel Code.gs terbaru → Ctrl+S → Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
   document.querySelectorAll('.lbKat').forEach(e => { e.textContent = KAT; });
   $('modalTxt').textContent = rp(rk.modal);
   $('totalTxt').textContent = backendLama ? 'Total dua menu: —' : 'Total dua menu: sisa ' + rp(r.saldo);
@@ -537,6 +537,7 @@ $('eSave').addEventListener('click', async () => {
     $('eMsg').textContent = 'Gagal menyimpan. Cek pesan merah di atas. Kalau tertulis "action tidak dikenal", Code.gs belum di-Deploy New version.';
     return;
   }
+  if (j.galat) { $('mEdit').classList.add('hidden'); banner('GAGAL: ' + j.galat, 'err'); return; }
   const row = (j.trx || []).find(t => t.id === EDIT);          // bukti dari Sheet, bukan dari input
     $('mEdit').classList.add('hidden');
     if (!row || row.tanggal !== tgl) {
