@@ -134,6 +134,7 @@
       </table>
     </div>
     <div id="emptyT" class="text-center text-sm text-slate-400 py-6">Belum ada transaksi minggu ini.</div>
+    <p class="text-[11px] text-slate-400 mt-2">Tap baris untuk ubah tanggal / nominal / menu. Tanda × untuk hapus.</p>
   </section>
 
   <!-- aksi akhir minggu -->
@@ -215,6 +216,31 @@
   </div>
 </div>
 
+<!-- ===== modal ubah transaksi ===== -->
+<div id="mEdit" class="hidden fixed inset-0 bg-black/40 z-40">
+  <div class="sheet bg-white w-full max-w-md mx-auto rounded-t-3xl p-5 mt-auto fixed bottom-0">
+    <h2 class="font-semibold text-lg mb-3">Ubah Transaksi</h2>
+    <div class="grid grid-cols-2 gap-2">
+      <label class="block min-w-0"><span class="text-xs text-slate-500">Tanggal</span>
+        <input id="eTgl" type="date" class="mt-1 w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2.5 num"></label>
+      <label class="block min-w-0"><span class="text-xs text-slate-500">Menu</span>
+        <select id="eKat" class="mt-1 w-full min-w-0 rounded-xl border border-slate-300 px-2 py-2.5"><option>Lumut</option><option>Kopi</option></select></label>
+      <label class="block min-w-0"><span class="text-xs text-slate-500">Jenis</span>
+        <select id="eJenis" class="mt-1 w-full min-w-0 rounded-xl border border-slate-300 px-2 py-2.5"><option value="Pengeluaran">Keluar</option><option value="Pendapatan">Masuk</option></select></label>
+      <label class="block min-w-0"><span class="text-xs text-slate-500">Nominal (Rp)</span>
+        <input id="eNom" type="number" inputmode="numeric" min="1" step="1" class="mt-1 w-full min-w-0 rounded-xl border border-slate-300 px-3 py-2.5 num"></label>
+    </div>
+    <label class="block mt-2"><span class="text-xs text-slate-500">Keterangan</span>
+      <input id="eKet" type="text" maxlength="200" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2.5"></label>
+    <div class="grid grid-cols-2 gap-2 mt-4">
+      <button id="eSave" class="rounded-xl bg-brand-700 text-white py-3 font-medium">Simpan perubahan</button>
+      <button id="eHapus" class="rounded-xl bg-rose-50 text-rose-700 py-3 font-medium">Hapus</button>
+      <button id="eBatal" class="col-span-2 rounded-xl bg-slate-100 py-3 font-medium">Batal</button>
+    </div>
+    <p id="eMsg" class="text-xs mt-2 text-slate-500"></p>
+  </div>
+</div>
+
 <!-- ===== modal kelola menu ===== -->
 <div id="mMnu" class="hidden fixed inset-0 bg-black/40 z-40">
   <div class="sheet bg-white w-full max-w-md mx-auto rounded-t-3xl p-5 mt-auto fixed bottom-0">
@@ -247,7 +273,7 @@
 </div>
 
 <script>
-const APP_V = '5';
+const APP_V = '6';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -343,7 +369,8 @@ function render() {
   const rows = list.map(it => {
     const bib = it.jenis === 'Bibit';
     if (!bib) jalan += (it.jenis === 'Pendapatan' ? it.nominal : -it.nominal);
-    return '<tr class="border-b border-slate-100 ' + (bib ? 'bg-amber-50/60' : '') + '">' +
+    return '<tr class="border-b border-slate-100 ' + (bib ? 'bg-amber-50/60' : 'cursor-pointer active:bg-slate-50') + '"' +
+      (bib ? '' : ' data-edit="' + esc(it.id) + '"') + '>' +
       '<td class="px-1 py-2 whitespace-nowrap text-slate-500 num">' + tglID(it.tanggal) + '</td>' +
       '<td class="px-1 py-2 ' + (bib ? 'font-medium text-amber-800' : '') + '">' + esc(it.keterangan) + '</td>' +
       '<td class="px-1 py-2 text-right num text-rose-700 whitespace-nowrap">' + (it.jenis === 'Pengeluaran' ? rp(it.nominal) : '') + '</td>' +
@@ -404,7 +431,9 @@ $('fTrx').addEventListener('submit', async e => {
   $('formMsg').textContent = 'Menyimpan…';
   const ok = await kirim({ action: 'tambah', tanggal: $('fTgl').value || todayYMD(), keterangan: ket, jenis: JENIS, nominal: nom, kategori: KAT });
   if (ok) {
-    $('formMsg').textContent = 'Tersimpan di ' + KAT + ': ' + (JENIS === 'Pendapatan' ? '+' : '−') + rp(nom);
+    const ts = ok.tersimpan || {};
+    $('formMsg').textContent = 'Tersimpan di Sheet: ' + tglID(ts.tanggal || $('fTgl').value) + ' · ' +
+      (ts.kategori || KAT) + ' · ' + (JENIS === 'Pendapatan' ? '+' : '−') + rp(nom);
     $('fKet').value = ''; $('fNom').value = ''; $('nomHint').textContent = '';
     $('fTgl').value = todayYMD();
   } else {
@@ -414,9 +443,46 @@ $('fTrx').addEventListener('submit', async e => {
 
 $('rowsT').addEventListener('click', async e => {
   const b = e.target.closest('[data-del]');
-  if (!b) return;
+  if (b) {
+    if (!confirm('Hapus transaksi ini?')) return;
+    await kirim({ action: 'hapus', id: b.getAttribute('data-del') });
+    return;
+  }
+  const tr = e.target.closest('[data-edit]');
+  if (tr) bukaEdit(tr.getAttribute('data-edit'));
+});
+
+function bukaEdit(id) {
+  const it = (D.trx || []).find(x => x.id === id);
+  if (!it) return;
+  EDIT = it.id;
+  $('eTgl').value = it.tanggal;
+  $('eKat').value = it.kategori || 'Lumut';
+  $('eJenis').value = it.jenis;
+  $('eNom').value = it.nominal;
+  $('eKet').value = it.keterangan;
+  $('eMsg').textContent = '';
+  $('mEdit').classList.remove('hidden');
+}
+$('eBatal').addEventListener('click', () => $('mEdit').classList.add('hidden'));
+$('eHapus').addEventListener('click', async () => {
+  if (!EDIT || BUSY) return;
   if (!confirm('Hapus transaksi ini?')) return;
-  await kirim({ action: 'hapus', id: b.getAttribute('data-del') });
+  const j = await kirim({ action: 'hapus', id: EDIT });
+  $('mEdit').classList.add('hidden');
+  if (j) banner('Transaksi dihapus.', 'warn');
+});
+$('eSave').addEventListener('click', async () => {
+  if (!EDIT || BUSY) return;
+  const ket = $('eKet').value.trim(), nom = Math.round(Number($('eNom').value) || 0);
+  if (!ket) { $('eMsg').textContent = 'Keterangan belum diisi.'; return; }
+  if (nom <= 0) { $('eMsg').textContent = 'Nominal harus lebih besar dari 0.'; return; }
+  $('eMsg').textContent = 'Menyimpan...';
+  const j = await kirim({ action: 'ubah', id: EDIT, tanggal: $('eTgl').value || todayYMD(),
+    keterangan: ket, jenis: $('eJenis').value, nominal: nom, kategori: $('eKat').value });
+  if (!j) { $('eMsg').textContent = 'Gagal menyimpan. Coba lagi.'; return; }
+  $('mEdit').classList.add('hidden');
+  banner('Transaksi diperbarui: ' + tglID($('eTgl').value) + ' · ' + $('eKat').value + '.', 'warn');
 });
 
 $('btnRefresh').addEventListener('click', () => load(LIHAT));
@@ -504,7 +570,7 @@ $('cfgCopy').addEventListener('click', async () => {
 
 
 /* ---------- jualan minuman ---------- */
-let JUAL = null, JQTY = 1;
+let JUAL = null, JQTY = 1, EDIT = null;
 
 function kategoriMenu() { return [...new Set(((D && D.menu) || []).map(m => m.kategori))]; }
 function renderJual() {
