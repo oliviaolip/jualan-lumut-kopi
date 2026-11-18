@@ -276,7 +276,7 @@
 </div>
 
 <script>
-const APP_V = '9';
+const APP_V = '10';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -296,6 +296,8 @@ function parseTgl(v) {
   if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return '';
   return y + '-' + pad2(m) + '-' + pad2(d);
 }
+const BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const tglPanjang = ymd => { const p = String(ymd || '').slice(0, 10).split('-'); return p.length === 3 ? (+p[2]) + ' ' + BLN[+p[1] - 1] + ' ' + p[0] : ''; };
 const tglTeks = ymd => { const p = String(ymd || '').slice(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; };
 const TGL_HINT = 'Tanggal belum benar. Tulis seperti 16/11/2026 (hari/bulan/tahun).';
 const todayYMD = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -714,12 +716,12 @@ paintKat();
 $('fTgl').value = tglTeks(todayYMD());
 $('fTgl').addEventListener('input', () => {
   const v = parseTgl($('fTgl').value);
-  $('fTglOk').textContent = v ? '= ' + tglID(v) : '';
+  $('fTglOk').textContent = v ? '= ' + tglPanjang(v) : '';
   $('fTglOk').className = 'text-[11px] ' + (v ? 'text-slate-400' : 'text-rose-600');
 });
 $('eTgl').addEventListener('input', () => {
   const v = parseTgl($('eTgl').value);
-  $('eTglOk').textContent = v ? '= ' + tglID(v) : 'format hari/bulan/tahun';
+  $('eTglOk').textContent = v ? '= ' + tglPanjang(v) : 'format hari/bulan/tahun';
   $('eTglOk').className = 'text-[11px] ' + (v ? 'text-slate-400' : 'text-rose-600');
 });
 bootUrl().then(() => load(null));
