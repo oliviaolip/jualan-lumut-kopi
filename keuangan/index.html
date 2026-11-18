@@ -237,6 +237,7 @@
       <button id="eHapus" class="rounded-xl bg-rose-50 text-rose-700 py-3 font-medium">Hapus</button>
       <button id="eBatal" class="col-span-2 rounded-xl bg-slate-100 py-3 font-medium">Batal</button>
     </div>
+    <p class="text-[11px] text-slate-400 mt-2">Kalau kalender tidak terbuka, ketik tanggal langsung di kolom Tanggal (contoh 16/11/2026), lalu Simpan perubahan.</p>
     <p id="eMsg" class="text-xs mt-2 text-slate-500"></p>
   </div>
 </div>
@@ -273,12 +274,14 @@
 </div>
 
 <script>
-const APP_V = '7';
+const APP_V = '8';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const tglID = s => { const p = String(s || '').slice(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(s || ''); };
+const tglOk = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+const TGL_HINT = 'Tanggal belum terbaca. Buka kolom Tanggal, pilih di kalender lalu tekan OK — atau ketik langsung 16/11/2026.';
 const todayYMD = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 let URL_S = localStorage.getItem(LSK) || '';
@@ -428,8 +431,9 @@ $('fTrx').addEventListener('submit', async e => {
   const nom = Math.round(Number($('fNom').value) || 0);
   if (!ket) { $('formMsg').textContent = 'Keterangan belum diisi.'; $('fKet').focus(); return; }
   if (nom <= 0) { $('formMsg').textContent = 'Nominal harus lebih besar dari 0.'; $('fNom').focus(); return; }
+  if (!tglOk($('fTgl').value)) { $('formMsg').textContent = TGL_HINT; $('fTgl').focus(); return; }
   $('formMsg').textContent = 'Menyimpan…';
-  const ok = await kirim({ action: 'tambah', tanggal: $('fTgl').value || todayYMD(), keterangan: ket, jenis: JENIS, nominal: nom, kategori: KAT });
+  const ok = await kirim({ action: 'tambah', tanggal: $('fTgl').value, keterangan: ket, jenis: JENIS, nominal: nom, kategori: KAT });
   if (ok) {
     const ts = ok.tersimpan || {};
     $('formMsg').textContent = 'Tersimpan di Sheet: ' + tglID(ts.tanggal || $('fTgl').value) + ' · ' +
@@ -477,12 +481,15 @@ $('eSave').addEventListener('click', async () => {
   const ket = $('eKet').value.trim(), nom = Math.round(Number($('eNom').value) || 0);
   if (!ket) { $('eMsg').textContent = 'Keterangan belum diisi.'; return; }
   if (nom <= 0) { $('eMsg').textContent = 'Nominal harus lebih besar dari 0.'; return; }
+  if (!tglOk($('eTgl').value)) { $('eMsg').textContent = TGL_HINT; return; }
   $('eMsg').textContent = 'Menyimpan...';
-  const j = await kirim({ action: 'ubah', id: EDIT, tanggal: $('eTgl').value || todayYMD(),
+  const j = await kirim({ action: 'ubah', id: EDIT, tanggal: $('eTgl').value,
     keterangan: ket, jenis: $('eJenis').value, nominal: nom, kategori: $('eKat').value });
   if (!j) { $('eMsg').textContent = 'Gagal menyimpan. Coba lagi.'; return; }
+  const ts = j.tersimpan || {};
   $('mEdit').classList.add('hidden');
-  banner('Transaksi diperbarui: ' + tglID($('eTgl').value) + ' · ' + $('eKat').value + '.', 'warn');
+  banner('Tersimpan di Sheet: ' + tglID(ts.tanggal || $('eTgl').value) + ' · ' + (ts.kategori || $('eKat').value) +
+    ' · ' + (ts.jenis === 'Pendapatan' ? '+' : '−') + rp(ts.nominal || nom), 'warn');
 });
 
 $('btnRefresh').addEventListener('click', () => load(LIHAT));
