@@ -144,7 +144,7 @@
     <button id="btnBaru" class="rounded-2xl border border-brand-700 text-brand-700 py-3.5 font-medium">Mulai Minggu Baru / Reset Saldo</button>
   </section>
 
-  <p class="text-center text-[11px] text-slate-400 mt-5">Data tersimpan di Google Sheets · app v<span id="verTxt">1</span></p>
+  <p class="text-center text-[11px] text-slate-400 mt-5">Data tersimpan di Google Sheets · app v<span id="verTxt">1</span> · Sheet v<span id="verSheet">?</span></p>
 </div>
 
 <!-- ===== modal pengaturan ===== -->
@@ -281,7 +281,7 @@
 </div>
 
 <script>
-const APP_V = '12';
+const APP_V = '13';
 const LSK = 'keuanganMingguanUrl';
 const $ = id => document.getElementById(id);
 const rp = n => 'Rp ' + (Number(n) < 0 ? '-' : '') + Math.abs(Math.round(Number(n) || 0)).toLocaleString('id-ID');
@@ -378,7 +378,9 @@ function render() {
   $('weekLabel').textContent = m.label + (LIHAT ? ' · melihat riwayat' : (m.sudahTutup ? ' · sudah tutup buku' : ''));
   const rk = (r.kat && r.kat[KAT]) || r;
   const backendLama = !r.kat;                     // Code.gs lama: kategori belum ada, angka Lumut/Kopi jadi kembar
-  if (backendLama) banner('Code.gs di Apps Script masih versi lama, jadi angka Lumut dan Kopi tampil sama. Tempel Code.gs baru, lalu Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
+    $('verSheet').textContent = (D.versi ? String(D.versi) : '1');
+      if (backendLama) banner('Code.gs di Apps Script masih versi lama, jadi angka Lumut dan Kopi tampil sama. Tempel Code.gs baru, lalu Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
+      else if (!(Number(D.versi) >= 12)) banner('Code.gs di Apps Script masih versi lama (Sheet v' + (D.versi || 1) + ', harusnya v12), jadi ubah tanggal tidak tersimpan. Tempel Code.gs terbaru → Ctrl+S → Deploy → Manage deployments → pensil → New version → Deploy.', 'err');
   document.querySelectorAll('.lbKat').forEach(e => { e.textContent = KAT; });
   $('modalTxt').textContent = rp(rk.modal);
   $('totalTxt').textContent = backendLama ? 'Total dua menu: —' : 'Total dua menu: sisa ' + rp(r.saldo);
